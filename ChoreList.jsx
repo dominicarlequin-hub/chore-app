@@ -7,6 +7,9 @@ const DEFAULT_CHORES = [
   { label: "Laundry", emoji: "👕" },
 ];
 
+const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEK_EMOJIS = ["🌟", "🛏️", "🐕", "🧹", "🍽️", "🧺", "🪴"];
+
 export default function ChoreList() {
   const [chores, setChores] = useState(() => {
     const saved = localStorage.getItem("chores");
@@ -27,19 +30,12 @@ export default function ChoreList() {
   const [editValue, setEditValue] = useState("");
   const editInputRef = useRef(null);
 
-  useEffect(() => {
-    localStorage.setItem("chores", JSON.stringify(chores));
-  }, [chores]);
+  const todayIndex = new Date().getDay();
 
-  useEffect(() => {
-    localStorage.setItem("choresDone", JSON.stringify(done));
-  }, [done]);
+  useEffect(() => { localStorage.setItem("chores", JSON.stringify(chores)); }, [chores]);
+  useEffect(() => { localStorage.setItem("choresDone", JSON.stringify(done)); }, [done]);
+  useEffect(() => { localStorage.setItem("choreStreak", streak); }, [streak]);
 
-  useEffect(() => {
-    localStorage.setItem("choreStreak", streak);
-  }, [streak]);
-
-  // Auto-focus the edit input when it appears
   useEffect(() => {
     if (editingIndex !== null && editInputRef.current) {
       editInputRef.current.focus();
@@ -68,18 +64,13 @@ export default function ChoreList() {
 
   const handleChoreClick = (index, event) => {
     if (done[index] || editingIndex === index) return;
-
     setPopping((prev) => ({ ...prev, [index]: true }));
     setTimeout(() => {
       setPopping((prev) => ({ ...prev, [index]: false }));
       setDone((prev) => ({ ...prev, [index]: true }));
     }, 300);
-
     const rect = event.currentTarget.getBoundingClientRect();
-    triggerConfetti(
-      rect.left + rect.width / 2,
-      rect.top + rect.height / 2
-    );
+    triggerConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
   };
 
   const handleAdd = () => {
@@ -105,9 +96,7 @@ export default function ChoreList() {
     });
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleAdd();
-  };
+  const handleKeyDown = (e) => { if (e.key === "Enter") handleAdd(); };
 
   const handleReset = () => {
     setStreak(0);
@@ -124,11 +113,7 @@ export default function ChoreList() {
   const handleEditSave = (index) => {
     const trimmed = editValue.trim();
     if (trimmed) {
-      setChores((prev) =>
-        prev.map((chore, i) =>
-          i === index ? { ...chore, label: trimmed } : chore
-        )
-      );
+      setChores((prev) => prev.map((chore, i) => i === index ? { ...chore, label: trimmed } : chore));
     }
     setEditingIndex(null);
     setEditValue("");
@@ -136,10 +121,7 @@ export default function ChoreList() {
 
   const handleEditKeyDown = (e, index) => {
     if (e.key === "Enter") handleEditSave(index);
-    if (e.key === "Escape") {
-      setEditingIndex(null);
-      setEditValue("");
-    }
+    if (e.key === "Escape") { setEditingIndex(null); setEditValue(""); }
   };
 
   const getStreakLabel = () => {
@@ -151,106 +133,164 @@ export default function ChoreList() {
 
   return (
     <div style={styles.wrapper}>
-      {/* Streak banner */}
-      <div style={{
-        ...styles.streakBanner,
-        ...(streakPop ? styles.streakBannerPop : {}),
-      }}>
-        <div style={styles.streakLeft}>
-          <span style={styles.streakIcon}>🏆</span>
-          <div>
-            <span style={styles.streakTitle}>Streak</span>
-            <span style={styles.streakValue}>{getStreakLabel()}</span>
-          </div>
-        </div>
-        <button onClick={handleReset} style={styles.resetBtn}>Reset</button>
-      </div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
 
+        @keyframes pop {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.04); }
+          100% { transform: scale(1); }
+        }
+        @keyframes streakPop {
+          0%   { transform: scale(1); }
+          50%  { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(251,191,36,0.25); }
+          100% { transform: scale(1); }
+        }
+        @keyframes shimmer {
+          to { left: 200%; }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        input:focus { outline: none; }
+      `}</style>
+
+      {/* Header */}
       <div style={styles.header}>
-        <span style={styles.eyebrow}>Today's list</span>
-        <h2 style={styles.title}>Chores</h2>
-        <p style={styles.progress}>
-          {total === 0
-            ? "No chores yet — add one below"
-            : allDone
-            ? "✨ All done!"
-            : `${completedCount} of ${total} complete`}
-        </p>
+        <div style={styles.headerStickers}>⭐ 🌈 ✨ 🎀 ⭐</div>
+        <h1 style={styles.headerTitle}>My <span style={{color:"#FDE68A"}}>Chore</span> Chart!</h1>
+        <div style={styles.headerSub}>Today's Mission</div>
+        <div style={styles.starBadge}>⭐ {streak} day streak — {getStreakLabel()}</div>
       </div>
 
-      {/* Progress Bar */}
-      {total > 0 && (
-        <div style={styles.progressBarWrapper}>
-          <div
-            style={{
-              ...styles.progressBarFill,
-              width: `${(completedCount / total) * 100}%`,
-              backgroundColor: allDone ? "#4CAF82" : "#A8DFC5",
-            }}
-          />
+      {/* Progress */}
+      <div style={styles.progressWrap}>
+        <div style={styles.progressLabel}>
+          <span>Today's progress</span>
+          <span>{completedCount} / {total} done</span>
         </div>
-      )}
+        <div style={styles.progressTrack}>
+          <div style={{
+            ...styles.progressFill,
+            width: total > 0 ? `${(completedCount / total) * 100}%` : "0%",
+            backgroundColor: allDone ? "#34D399" : "#7C3AED",
+          }} />
+        </div>
+      </div>
 
-      <ul style={styles.list}>
+      {/* Confetti dots */}
+      <div style={styles.dotsRow}>
+        {["#F87171","#FBBF24","#34D399","#60A5FA","#A78BFA","#F472B6"].map((color, i) => (
+          <div key={i} style={{
+            width: 10, height: 10, borderRadius: "50%",
+            backgroundColor: color,
+            animation: `bounce 1.2s ease-in-out ${i * 0.1}s infinite`,
+          }} />
+        ))}
+      </div>
+
+      {/* Chore Cards */}
+      <div style={styles.choreList}>
         {chores.map((chore, index) => {
           const isDone = done[index];
           const isPop = popping[index];
           const isEditing = editingIndex === index;
-
           return (
-            <li
+            <div
               key={index}
               onClick={(e) => handleChoreClick(index, e)}
               style={{
-                ...styles.card,
-                ...(isDone ? styles.cardDone : {}),
-                ...(isPop ? styles.cardPop : {}),
+                ...styles.choreCard,
+                ...(isDone ? styles.choreCardDone : {}),
+                ...(isPop ? { animation: "pop 0.3s ease forwards" } : {}),
                 cursor: isDone || isEditing ? "default" : "pointer",
               }}
             >
-              <span style={styles.emoji}>{chore.emoji}</span>
-
-              {isEditing ? (
-                <input
-                  ref={editInputRef}
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={() => handleEditSave(index)}
-                  onKeyDown={(e) => handleEditKeyDown(e, index)}
-                  style={styles.editInput}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <span style={{
-                  ...styles.choreLabel,
-                  ...(isDone ? styles.choreLabelDone : {}),
-                }}>
-                  {chore.label}
-                </span>
-              )}
-
+              <div style={{
+                ...styles.choreIcon,
+                background: isDone
+                  ? "linear-gradient(135deg, #A7F3D0, #34D399)"
+                  : "linear-gradient(135deg, #DDD6FE, #A78BFA)",
+              }}>
+                {chore.emoji}
+              </div>
+              <div style={styles.choreInfo}>
+                {isEditing ? (
+                  <input
+                    ref={editInputRef}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={() => handleEditSave(index)}
+                    onKeyDown={(e) => handleEditKeyDown(e, index)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={styles.editInput}
+                  />
+                ) : (
+                  <div style={{
+                    ...styles.choreName,
+                    ...(isDone ? styles.choreNameDone : {}),
+                  }}>{chore.label}</div>
+                )}
+                <div style={styles.chorePoints}>⭐ 5 stars</div>
+              </div>
               {!isDone && !isEditing && (
-                <button
-                  onClick={(e) => handleEditStart(index, e)}
-                  style={styles.iconBtn}
-                  title="Edit chore"
-                >
-                  ✏️
-                </button>
+                <button onClick={(e) => handleEditStart(index, e)} style={styles.iconBtn}>✏️</button>
               )}
-
-              <button
-                onClick={(e) => handleDelete(index, e)}
-                style={styles.deleteBtn}
-                title="Remove chore"
-              >
-                ✕
-              </button>
-            </li>
+              <button onClick={(e) => handleDelete(index, e)} style={styles.deleteBtn}>✕</button>
+              <div style={{
+                ...styles.choreCheck,
+                ...(isDone ? styles.choreCheckDone : {}),
+              }}>{isDone ? "✓" : ""}</div>
+            </div>
           );
         })}
-      </ul>
+      </div>
 
+      {/* Weekly Calendar */}
+      <div style={styles.sectionTitle}>📅 This Week</div>
+      <div style={styles.weekCalendar}>
+        {WEEK_DAYS.map((day, i) => {
+          const isToday = i === todayIndex;
+          const isPast = i < todayIndex;
+          return (
+            <div key={i} style={{
+              ...styles.dayCard,
+              ...(isPast ? styles.dayCardDone : {}),
+              ...(isToday ? styles.dayCardToday : {}),
+            }}>
+              <div style={{
+                ...styles.dayLabel,
+                color: isToday ? "#F472B6" : "#7C3AED",
+              }}>{day}</div>
+              <div style={styles.dayEmoji}>{WEEK_EMOJIS[i]}</div>
+              <div style={{
+                ...styles.dayDot,
+                backgroundColor: isPast ? "#34D399" : isToday ? "#FBBF24" : "#E5E7EB",
+              }} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Rewards */}
+      <div style={styles.sectionTitle}>🎁 Rewards Shop</div>
+      <div style={styles.rewardShelf}>
+        {[
+          { emoji: "🍦", name: "Ice Cream", cost: 25 },
+          { emoji: "🎮", name: "Game Time", cost: 30 },
+          { emoji: "🎬", name: "Movie Night", cost: 50 },
+          { emoji: "🧸", name: "New Toy", cost: 100 },
+        ].map((r, i) => (
+          <div key={i} style={styles.rewardCard}>
+            <span style={styles.rewardEmoji}>{r.emoji}</span>
+            <div style={styles.rewardName}>{r.name}</div>
+            <div style={styles.rewardCost}>⭐ {r.cost} stars</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add input */}
       <div style={styles.inputRow}>
         <input
           type="text"
@@ -260,34 +300,15 @@ export default function ChoreList() {
           placeholder="Add a chore..."
           style={styles.input}
         />
-        <button onClick={handleAdd} style={styles.addBtn}>Add</button>
+        <button onClick={handleAdd} style={styles.addBtn}>＋ Add</button>
       </div>
+
+      {/* Reset streak */}
+      <button onClick={handleReset} style={styles.resetBtn}>Reset Streak</button>
 
       {allDone && total > 0 && (
         <p style={styles.allDoneBanner}>🎉 You crushed it today!</p>
       )}
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
-
-        @keyframes pop {
-          0%   { transform: scale(1); }
-          40%  { transform: scale(1.04); background-color: #d4f0e3; }
-          100% { transform: scale(1); }
-        }
-
-        @keyframes streakPop {
-          0%   { transform: scale(1); }
-          50%  { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(251,191,36,0.25); }
-          100% { transform: scale(1); }
-        }
-
-        input:focus {
-          outline: none;
-          border-color: #4CAF82 !important;
-          box-shadow: 0 0 0 3px rgba(76,175,130,0.15);
-        }
-      `}</style>
     </div>
   );
 }
@@ -296,199 +317,210 @@ const styles = {
   wrapper: {
     maxWidth: "420px",
     margin: "0 auto",
-    fontFamily: "'DM Sans', sans-serif",
-    padding: "0 16px 40px",
+    fontFamily: "'Nunito', sans-serif",
+    paddingBottom: "40px",
   },
-  streakBanner: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#FEF9EE",
-    border: "1.5px solid #F9E4A0",
-    borderRadius: "14px",
-    padding: "14px 18px",
-    marginBottom: "28px",
-    transition: "all 0.3s ease",
-  },
-  streakBannerPop: {
-    animation: "streakPop 0.6s ease forwards",
-  },
-  streakLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  streakIcon: {
-    fontSize: "26px",
-  },
-  streakTitle: {
-    display: "block",
-    fontSize: "10px",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    color: "#C9A836",
-    marginBottom: "2px",
-  },
-  streakValue: {
-    display: "block",
-    fontSize: "16px",
-    fontWeight: 600,
-    color: "#1A1A1A",
-  },
-  resetBtn: {
-    background: "none",
-    border: "1px solid #E8D88A",
-    borderRadius: "8px",
-    padding: "5px 12px",
-    fontSize: "12px",
-    color: "#C9A836",
-    cursor: "pointer",
-    fontFamily: "'DM Sans', sans-serif",
-  },
+  // Header
   header: {
-    marginBottom: "16px",
+    background: "linear-gradient(135deg, #C084FC 0%, #F472B6 40%, #FCA5A5 70%, #FDE68A 100%)",
+    borderBottom: "3px dashed #F472B6",
+    padding: "20px 20px 16px",
+    textAlign: "center",
   },
-  eyebrow: {
-    fontSize: "11px",
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    color: "#9A8F80",
-    display: "block",
-    marginBottom: "4px",
-  },
-  title: {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: "36px",
-    fontWeight: 700,
-    color: "#1A1A1A",
-    margin: "0 0 6px",
-    lineHeight: 1.1,
-  },
-  progress: {
-    fontSize: "14px",
-    color: "#9A8F80",
+  headerStickers: { fontSize: 22, letterSpacing: 6, marginBottom: 4 },
+  headerTitle: {
+    fontFamily: "'Fredoka One', cursive",
+    fontSize: 32,
+    color: "white",
     margin: 0,
+    lineHeight: 1,
+    textShadow: "0 2px 8px rgba(124,58,237,0.25)",
   },
-  progressBarWrapper: {
-    height: "6px",
-    backgroundColor: "#E8E0D5",
-    borderRadius: "999px",
-    marginBottom: "24px",
+  headerSub: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  starBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    background: "linear-gradient(135deg, #FDE68A, #FCA5A5)",
+    borderRadius: 999,
+    padding: "6px 16px",
+    marginTop: 14,
+    fontFamily: "'Fredoka One', cursive",
+    fontSize: 14,
+    color: "#7C3AED",
+    border: "2px solid white",
+    boxShadow: "0 2px 8px rgba(124,58,237,0.15)",
+  },
+  // Progress
+  progressWrap: { padding: "16px 20px 0" },
+  progressLabel: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: 12,
+    fontWeight: 800,
+    color: "#7C3AED",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  progressTrack: {
+    background: "#EDE9FE",
+    borderRadius: 999,
+    height: 14,
+    overflow: "hidden",
+    border: "2px solid white",
+    boxShadow: "0 2px 6px rgba(124,58,237,0.1)",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    transition: "width 0.5s ease, background-color 0.4s ease",
+  },
+  // Dots
+  dotsRow: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 4,
+    padding: "10px 20px 0",
+    flexWrap: "wrap",
+  },
+  // Chore list
+  choreList: { padding: "16px 20px 0", display: "flex", flexDirection: "column", gap: 12 },
+  choreCard: {
+    background: "white",
+    borderRadius: 20,
+    padding: "14px 16px",
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+    border: "2.5px solid #EDE9FE",
+    boxShadow: "0 4px 0px #EDE9FE",
+    transition: "all 0.2s",
+    position: "relative",
     overflow: "hidden",
   },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: "999px",
-    transition: "width 0.4s ease, background-color 0.4s ease",
+  choreCardDone: {
+    background: "#F5F3FF",
+    borderColor: "#C4B5FD",
+    boxShadow: "0 4px 0px #C4B5FD",
+    opacity: 0.85,
   },
-  list: {
-    listStyle: "none",
-    padding: 0,
-    margin: "0 0 16px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
+  choreIcon: {
+    width: 48, height: 48, borderRadius: 16,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 26, flexShrink: 0,
+    border: "2px solid rgba(255,255,255,0.8)",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
   },
-  card: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    backgroundColor: "#F0EBE1",
-    border: "1.5px solid #D4C5A9",
-    borderRadius: "14px",
-    padding: "16px 18px",
-    transition: "all 0.2s ease",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-    userSelect: "none",
-  },
-  cardDone: {
-    backgroundColor: "#EAF7F0",
-    borderColor: "#A8DFC5",
-    opacity: 0.75,
-  },
-  cardPop: {
-    animation: "pop 0.3s ease forwards",
-  },
-  emoji: {
-    fontSize: "22px",
-    flexShrink: 0,
-  },
-  choreLabel: {
-    flex: 1,
-    fontSize: "16px",
-    fontWeight: 500,
-    color: "#1A1A1A",
-    transition: "all 0.3s ease",
-  },
-  choreLabelDone: {
-    textDecoration: "line-through",
-    color: "#9A8F80",
-  },
+  choreInfo: { flex: 1 },
+  choreName: { fontSize: 16, fontWeight: 800, color: "#3B1FA3", lineHeight: 1.2 },
+  choreNameDone: { textDecoration: "line-through", color: "#A78BFA" },
+  chorePoints: { fontSize: 12, fontWeight: 700, color: "#F59E0B", marginTop: 2 },
   editInput: {
-    flex: 1,
-    fontSize: "16px",
-    fontWeight: 500,
-    fontFamily: "'DM Sans', sans-serif",
-    border: "none",
-    borderBottom: "2px solid #4CAF82",
-    backgroundColor: "transparent",
-    color: "#1A1A1A",
-    padding: "2px 0",
-    outline: "none",
+    flex: 1, fontSize: 16, fontWeight: 700,
+    fontFamily: "'Nunito', sans-serif",
+    border: "none", borderBottom: "2px solid #7C3AED",
+    backgroundColor: "transparent", color: "#3B1FA3",
+    padding: "2px 0", outline: "none", width: "100%",
   },
   iconBtn: {
-    background: "none",
-    border: "none",
-    fontSize: "15px",
-    cursor: "pointer",
-    padding: "4px 6px",
-    borderRadius: "6px",
-    lineHeight: 1,
-    flexShrink: 0,
+    background: "none", border: "none", fontSize: 15,
+    cursor: "pointer", padding: "4px 6px", borderRadius: 6, lineHeight: 1, flexShrink: 0,
   },
   deleteBtn: {
-    background: "none",
-    border: "none",
-    color: "#C4B9A8",
-    fontSize: "14px",
-    cursor: "pointer",
-    padding: "4px 6px",
-    borderRadius: "6px",
-    lineHeight: 1,
-    flexShrink: 0,
+    background: "none", border: "none", color: "#C4B9A8",
+    fontSize: 14, cursor: "pointer", padding: "4px 6px",
+    borderRadius: 6, lineHeight: 1, flexShrink: 0,
   },
-  inputRow: {
-    display: "flex",
-    gap: "8px",
-    marginTop: "8px",
+  choreCheck: {
+    width: 30, height: 30, borderRadius: "50%",
+    border: "2.5px solid #C4B5FD",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 16, flexShrink: 0, background: "white", transition: "all 0.2s",
   },
+  choreCheckDone: {
+    background: "linear-gradient(135deg, #A78BFA, #7C3AED)",
+    borderColor: "#7C3AED", color: "white",
+  },
+  // Section title
+  sectionTitle: {
+    fontFamily: "'Fredoka One', cursive",
+    fontSize: 20, color: "#7C3AED",
+    padding: "20px 20px 10px",
+    display: "flex", alignItems: "center", gap: 8,
+  },
+  // Weekly calendar
+  weekCalendar: {
+    display: "flex", gap: 8,
+    padding: "0 20px", overflowX: "auto",
+    paddingBottom: 4,
+    scrollbarWidth: "none",
+  },
+  dayCard: {
+    background: "white", borderRadius: 16,
+    padding: "10px 8px", textAlign: "center",
+    border: "2.5px solid #D1FAE5",
+    boxShadow: "0 3px 0px #D1FAE5",
+    minWidth: 44, flexShrink: 0,
+  },
+  dayCardDone: {
+    borderColor: "#86EFAC", boxShadow: "0 3px 0px #86EFAC", background: "#F0FDF4",
+  },
+  dayCardToday: {
+    borderColor: "#F472B6", boxShadow: "0 3px 0px #F472B6", background: "#FFF0F7",
+  },
+  dayLabel: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", marginBottom: 6 },
+  dayEmoji: { fontSize: 20, marginBottom: 6 },
+  dayDot: { width: 8, height: 8, borderRadius: "50%", margin: "0 auto" },
+  // Rewards
+  rewardShelf: {
+    display: "flex", gap: 12, padding: "0 20px",
+    overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none",
+  },
+  rewardCard: {
+    background: "white", borderRadius: 20,
+    padding: "14px 16px", textAlign: "center",
+    border: "2.5px solid #FDE68A", boxShadow: "0 4px 0px #FDE68A",
+    minWidth: 100, flexShrink: 0, cursor: "pointer",
+  },
+  rewardEmoji: { fontSize: 32, display: "block", marginBottom: 4 },
+  rewardName: { fontSize: 12, fontWeight: 800, color: "#7C3AED", lineHeight: 1.2 },
+  rewardCost: { fontSize: 11, fontWeight: 700, color: "#F59E0B", marginTop: 4 },
+  // Input
+  inputRow: { display: "flex", gap: 8, padding: "20px 20px 0" },
   input: {
-    flex: 1,
-    padding: "13px 16px",
-    fontSize: "15px",
-    fontFamily: "'DM Sans', sans-serif",
-    border: "1.5px solid #D4C5A9",
-    borderRadius: "12px",
-    backgroundColor: "#F0EBE1",
-    color: "#1A1A1A",
-    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+    flex: 1, padding: "13px 16px", fontSize: 15,
+    fontFamily: "'Nunito', sans-serif",
+    border: "2.5px solid #EDE9FE", borderRadius: 18,
+    backgroundColor: "white", color: "#3B1FA3",
+    transition: "border-color 0.2s ease",
+    fontWeight: 700,
   },
   addBtn: {
-    padding: "13px 20px",
-    fontSize: "15px",
-    fontWeight: 600,
-    fontFamily: "'DM Sans', sans-serif",
-    backgroundColor: "#4CAF82",
-    color: "#fff",
-    border: "none",
-    borderRadius: "12px",
-    cursor: "pointer",
+    padding: "13px 20px", fontSize: 15, fontWeight: 800,
+    fontFamily: "'Fredoka One', cursive",
+    background: "linear-gradient(135deg, #7C3AED, #A78BFA)",
+    color: "white", border: "none", borderRadius: 18,
+    cursor: "pointer", boxShadow: "0 4px 0px #5B21B6",
+    whiteSpace: "nowrap",
+  },
+  resetBtn: {
+    display: "block", margin: "12px auto 0",
+    background: "none", border: "1.5px solid #C4B5FD",
+    borderRadius: 10, padding: "6px 16px",
+    fontSize: 12, color: "#A78BFA", cursor: "pointer",
+    fontFamily: "'Nunito', sans-serif", fontWeight: 700,
   },
   allDoneBanner: {
-    textAlign: "center",
-    marginTop: "24px",
-    fontSize: "15px",
-    color: "#4CAF82",
-    fontWeight: 600,
+    textAlign: "center", marginTop: 24,
+    fontSize: 16, color: "#7C3AED", fontWeight: 800,
+    fontFamily: "'Fredoka One', cursive",
   },
 };
