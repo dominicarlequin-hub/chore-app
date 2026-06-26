@@ -163,9 +163,14 @@ export default function ChoreList() {
   const handleKeyDown = (e) => { if (e.key === "Enter") handleAdd(); };
 
   const handleReset = () => {
+    if (!window.confirm("Reset everything? This clears completed chores, points, and your streak.")) return;
     setStreak(0);
     setStreakHistory([]);
+    setPoints(0);
+    setDone({});
     localStorage.setItem("choreStreak", 0);
+    localStorage.setItem("chorePoints", 0);
+    localStorage.setItem("choresDone", JSON.stringify({}));
     localStorage.removeItem("streakCountedToday");
     localStorage.removeItem("streakHistory");
   };
@@ -466,7 +471,7 @@ export default function ChoreList() {
         <button onClick={handleAdd} style={styles.addBtn}>＋ Add</button>
       </div>
 
-      <button onClick={handleReset} style={styles.resetBtn2}>Reset Streak</button>
+      <button onClick={handleReset} style={styles.resetBtn2}>Reset Everything</button>
 
       {allDone && total > 0 && (
         <p style={styles.allDoneBanner}>🎉 You crushed it today!</p>
