@@ -36,7 +36,6 @@ export default function ChoreList() {
     localStorage.setItem("choreStreak", streak);
   }, [streak]);
 
-  // Watch for all chores completed → increment streak
   const completedCount = Object.keys(done).filter((k) => done[k]).length;
   const total = chores.length;
   const allDone = total > 0 && completedCount === total;
@@ -143,6 +142,19 @@ export default function ChoreList() {
             : `${completedCount} of ${total} complete`}
         </p>
       </div>
+
+      {/* Progress Bar */}
+      {total > 0 && (
+        <div style={styles.progressBarWrapper}>
+          <div
+            style={{
+              ...styles.progressBarFill,
+              width: `${(completedCount / total) * 100}%`,
+              backgroundColor: allDone ? "#4CAF82" : "#A8DFC5",
+            }}
+          />
+        </div>
+      )}
 
       <ul style={styles.list}>
         {chores.map((chore, index) => {
@@ -274,7 +286,7 @@ const styles = {
     fontFamily: "'DM Sans', sans-serif",
   },
   header: {
-    marginBottom: "24px",
+    marginBottom: "16px",
   },
   eyebrow: {
     fontSize: "11px",
@@ -296,6 +308,18 @@ const styles = {
     fontSize: "14px",
     color: "#9A8F80",
     margin: 0,
+  },
+  progressBarWrapper: {
+    height: "6px",
+    backgroundColor: "#E8E0D5",
+    borderRadius: "999px",
+    marginBottom: "24px",
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: "999px",
+    transition: "width 0.4s ease, background-color 0.4s ease",
   },
   list: {
     listStyle: "none",
