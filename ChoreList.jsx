@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { triggerConfetti } from "./confetti.js";
 
 const DEFAULT_CHORES = [
-  { label: "Wash dishes", emoji: "🍽️" },
-  { label: "Vacuum", emoji: "🧹" },
-  { label: "Laundry", emoji: "👕" },
+  { label: "Wash dishes", emoji: "🍽️", points: 5 },
+  { label: "Vacuum", emoji: "🧹", points: 5 },
+  { label: "Laundry", emoji: "👕", points: 5 },
 ];
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -15,6 +15,13 @@ const MILESTONES = [
   { days: 7,  emoji: "🔥", label: "7 Day Flame!" },
   { days: 14, emoji: "⚡", label: "2 Week Spark!" },
   { days: 30, emoji: "👑", label: "30 Day Legend!" },
+];
+
+const REWARDS = [
+  { emoji: "🍦", name: "Ice Cream", cost: 25 },
+  { emoji: "🎮", name: "Game Time", cost: 30 },
+  { emoji: "🎬", name: "Movie Night", cost: 50 },
+  { emoji: "🧸", name: "New Toy", cost: 100 },
 ];
 
 function getFlameSize(streak) {
@@ -42,6 +49,12 @@ export default function ChoreList() {
     const saved = localStorage.getItem("choresDone");
     return saved ? JSON.parse(saved) : {};
   });
+  const [points, setPoints] = useState(() => {
+    const saved = localStorage.getItem("chorePoints");
+    return saved ? parseInt(saved) : 0;
+  });
+  const [pointPop, setPointPop] = useState(null); // {index, amount}
+  const [redeemedReward, setRedeemedReward] = useState(null);
   const [popping, setPopping] = useState({});
   const [inputValue, setInputValue] = useState("");
   const [streak, setStreak] = useState(() => {
@@ -63,6 +76,7 @@ export default function ChoreList() {
   useEffect(() => { localStorage.setItem("chores", JSON.stringify(chores)); }, [chores]);
   useEffect(() => { localStorage.setItem("choresDone", JSON.stringify(done)); }, [done]);
   useEffect(() => { localStorage.setItem("choreStreak", streak); }, [streak]);
+  useEffect(() => { localStorage.setItem("chorePoints", points); }, [points]);
   useEffect(() => { localStorage.setItem("streakHistory", JSON.stringify(streakHistory)); }, [streakHistory]);
 
   useEffect(() => {
@@ -82,7 +96,6 @@ export default function ChoreList() {
         setStreak((prev) => {
           const next = prev + 1;
           localStorage.setItem("choreStreak", next);
-          // Check milestones
           const hit = MILESTONES.find(m => m.days === next);
           if (hit) {
             setMilestone(hit);
@@ -90,7 +103,6 @@ export default function ChoreList() {
           }
           return next;
         });
-        // Save today to history
         setStreakHistory(prev => {
           if (prev.includes(todayStr)) return prev;
           return [...prev, todayStr];
@@ -105,18 +117,30 @@ export default function ChoreList() {
   const handleChoreClick = (index, event) => {
     if (done[index] || editingIndex === index) return;
     setPopping((prev) => ({ ...prev, [index]: true }));
+    const earned = chores[index].points || 5;
     setTimeout(() => {
       setPopping((prev) => ({ ...prev, [index]: false }));
       setDone((prev) => ({ ...prev, [index]: true }));
+      setPoints((prev) => prev + earned);
+      setPointPop({ index, amount: earned });
+      setTimeout(() => setPointPop(null), 1200);
     }, 300);
     const rect = event.currentTarget.getBoundingClientRect();
     triggerConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
   };
 
+  const handleRedeem = (reward) => {
+    if (points < reward.cost) return;
+    setPoints((prev) => prev - reward.cost);
+    setRedeemedReward(reward);
+    setTimeout(() => setRedeemedReward(null), 3000);
+    triggerConfetti(window.innerWidth / 2, window.innerHeight / 3);
+  };
+
   const handleAdd = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
-    setChores((prev) => [...prev, { label: trimmed, emoji: "📌" }]);
+    setChores((prev) => [...prev, { label: trimmed, emoji: "📌", points: 5 }]);
     setInputValue("");
   };
 
@@ -166,7 +190,6 @@ export default function ChoreList() {
     if (e.key === "Escape") { setEditingIndex(null); setEditValue(""); }
   };
 
-  // Build last 7 days for history calendar
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -181,7 +204,6 @@ export default function ChoreList() {
     <div style={styles.wrapper}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
-
         @keyframes pop {
           0%   { transform: scale(1); }
           40%  { transform: scale(1.04); }
@@ -192,16 +214,17 @@ export default function ChoreList() {
           50%       { transform: scale(1.15); filter: drop-shadow(0 0 14px ${flameColor}cc); }
         }
         @keyframes milestoneIn {
-          0%   { transform: scale(0.5) translateY(20px); opacity: 0; }
-          60%  { transform: scale(1.1) translateY(-4px); opacity: 1; }
-          100% { transform: scale(1) translateY(0); opacity: 1; }
+          0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0; }
+          60%  { transform: translate(-50%,-50%) scale(1.1); opacity: 1; }
+          100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+        }
+        @keyframes pointFloat {
+          0%   { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-40px); }
         }
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-6px); }
-        }
-        @keyframes shimmer {
-          to { left: 200%; }
         }
         input:focus { outline: none; }
       `}</style>
@@ -215,11 +238,22 @@ export default function ChoreList() {
         </div>
       )}
 
+      {/* Redeemed reward popup */}
+      {redeemedReward && (
+        <div style={styles.milestonePopup}>
+          <div style={styles.milestoneEmoji}>{redeemedReward.emoji}</div>
+          <div style={styles.milestoneLabel}>{redeemedReward.name} Unlocked!</div>
+          <div style={styles.milestoneSub}>Go enjoy your reward! 🎉</div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerStickers}>⭐ 🌈 ✨ 🎀 ⭐</div>
         <h1 style={styles.headerTitle}>My <span style={{color:"#FDE68A"}}>Chore</span> Chart!</h1>
         <div style={styles.headerSub}>Today's Mission</div>
+        {/* Points display in header */}
+        <div style={styles.starBadge}>⭐ {points} stars</div>
       </div>
 
       {/* Streak Banner */}
@@ -251,7 +285,7 @@ export default function ChoreList() {
         </button>
       </div>
 
-      {/* Streak History Calendar */}
+      {/* Streak History */}
       <div style={styles.sectionTitle}>📅 Streak History</div>
       <div style={styles.historyRow}>
         {last7Days.map((dateStr, i) => {
@@ -266,10 +300,7 @@ export default function ChoreList() {
               borderColor: isToday ? flameColor : "#EDE9FE",
               boxShadow: isToday ? `0 3px 0px ${flameColor}` : "0 3px 0px #EDE9FE",
             }}>
-              <div style={{
-                ...styles.historyLabel,
-                color: completed ? "white" : "#7C3AED",
-              }}>{label}</div>
+              <div style={{ ...styles.historyLabel, color: completed ? "white" : "#7C3AED" }}>{label}</div>
               <div style={{fontSize: 16}}>{completed ? "🔥" : isToday ? "⏳" : "○"}</div>
             </div>
           );
@@ -291,12 +322,11 @@ export default function ChoreList() {
         </div>
       </div>
 
-      {/* Confetti dots */}
+      {/* Bounce dots */}
       <div style={styles.dotsRow}>
         {["#F87171","#FBBF24","#34D399","#60A5FA","#A78BFA","#F472B6"].map((color, i) => (
           <div key={i} style={{
-            width: 10, height: 10, borderRadius: "50%",
-            backgroundColor: color,
+            width: 10, height: 10, borderRadius: "50%", backgroundColor: color,
             animation: `bounce 1.2s ease-in-out ${i * 0.1}s infinite`,
           }} />
         ))}
@@ -308,52 +338,63 @@ export default function ChoreList() {
           const isDone = done[index];
           const isPop = popping[index];
           const isEditing = editingIndex === index;
+          const earned = chore.points || 5;
           return (
-            <div
-              key={index}
-              onClick={(e) => handleChoreClick(index, e)}
-              style={{
-                ...styles.choreCard,
-                ...(isDone ? styles.choreCardDone : {}),
-                ...(isPop ? { animation: "pop 0.3s ease forwards" } : {}),
-                cursor: isDone || isEditing ? "default" : "pointer",
-              }}
-            >
-              <div style={{
-                ...styles.choreIcon,
-                background: isDone
-                  ? "linear-gradient(135deg, #A7F3D0, #34D399)"
-                  : "linear-gradient(135deg, #DDD6FE, #A78BFA)",
-              }}>
-                {chore.emoji}
-              </div>
-              <div style={styles.choreInfo}>
-                {isEditing ? (
-                  <input
-                    ref={editInputRef}
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onBlur={() => handleEditSave(index)}
-                    onKeyDown={(e) => handleEditKeyDown(e, index)}
-                    onClick={(e) => e.stopPropagation()}
-                    style={styles.editInput}
-                  />
-                ) : (
-                  <div style={{
-                    ...styles.choreName,
-                    ...(isDone ? styles.choreNameDone : {}),
-                  }}>{chore.label}</div>
-                )}
-                <div style={styles.chorePoints}>⭐ 5 stars</div>
-              </div>
-              {!isDone && !isEditing && (
-                <button onClick={(e) => handleEditStart(index, e)} style={styles.iconBtn}>✏️</button>
+            <div key={index} style={{ position: "relative" }}>
+              {/* Floating points animation */}
+              {pointPop && pointPop.index === index && (
+                <div style={styles.pointFloat}>+{pointPop.amount} ⭐</div>
               )}
-              <button onClick={(e) => handleDelete(index, e)} style={styles.deleteBtn}>✕</button>
-              <div style={{
-                ...styles.choreCheck,
-                ...(isDone ? styles.choreCheckDone : {}),
-              }}>{isDone ? "✓" : ""}</div>
+              <div
+                onClick={(e) => handleChoreClick(index, e)}
+                style={{
+                  ...styles.choreCard,
+                  ...(isDone ? styles.choreCardDone : {}),
+                  ...(isPop ? { animation: "pop 0.3s ease forwards" } : {}),
+                  cursor: isDone || isEditing ? "default" : "pointer",
+                }}
+              >
+                <div style={{
+                  ...styles.choreIcon,
+                  background: isDone
+                    ? "linear-gradient(135deg, #A7F3D0, #34D399)"
+                    : "linear-gradient(135deg, #DDD6FE, #A78BFA)",
+                }}>
+                  {chore.emoji}
+                </div>
+                <div style={styles.choreInfo}>
+                  {isEditing ? (
+                    <input
+                      ref={editInputRef}
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => handleEditSave(index)}
+                      onKeyDown={(e) => handleEditKeyDown(e, index)}
+                      onClick={(e) => e.stopPropagation()}
+                      style={styles.editInput}
+                    />
+                  ) : (
+                    <div style={{
+                      ...styles.choreName,
+                      ...(isDone ? styles.choreNameDone : {}),
+                    }}>{chore.label}</div>
+                  )}
+                  <div style={{
+                    ...styles.chorePoints,
+                    color: isDone ? "#34D399" : "#F59E0B",
+                  }}>
+                    {isDone ? `✓ +${earned} stars earned!` : `⭐ ${earned} stars`}
+                  </div>
+                </div>
+                {!isDone && !isEditing && (
+                  <button onClick={(e) => handleEditStart(index, e)} style={styles.iconBtn}>✏️</button>
+                )}
+                <button onClick={(e) => handleDelete(index, e)} style={styles.deleteBtn}>✕</button>
+                <div style={{
+                  ...styles.choreCheck,
+                  ...(isDone ? styles.choreCheckDone : {}),
+                }}>{isDone ? "✓" : ""}</div>
+              </div>
             </div>
           );
         })}
@@ -371,10 +412,7 @@ export default function ChoreList() {
               ...(isPast ? styles.dayCardDone : {}),
               ...(isToday ? styles.dayCardToday : {}),
             }}>
-              <div style={{
-                ...styles.dayLabel,
-                color: isToday ? "#F472B6" : "#7C3AED",
-              }}>{day}</div>
+              <div style={{ ...styles.dayLabel, color: isToday ? "#F472B6" : "#7C3AED" }}>{day}</div>
               <div style={styles.dayEmoji}>{WEEK_EMOJIS[i]}</div>
               <div style={{
                 ...styles.dayDot,
@@ -385,21 +423,34 @@ export default function ChoreList() {
         })}
       </div>
 
-      {/* Rewards */}
+      {/* Rewards Shop */}
       <div style={styles.sectionTitle}>🎁 Rewards Shop</div>
+      <div style={styles.pointsHint}>You have <strong style={{color:"#7C3AED"}}>⭐ {points} stars</strong> to spend</div>
       <div style={styles.rewardShelf}>
-        {[
-          { emoji: "🍦", name: "Ice Cream", cost: 25 },
-          { emoji: "🎮", name: "Game Time", cost: 30 },
-          { emoji: "🎬", name: "Movie Night", cost: 50 },
-          { emoji: "🧸", name: "New Toy", cost: 100 },
-        ].map((r, i) => (
-          <div key={i} style={styles.rewardCard}>
-            <span style={styles.rewardEmoji}>{r.emoji}</span>
-            <div style={styles.rewardName}>{r.name}</div>
-            <div style={styles.rewardCost}>⭐ {r.cost} stars</div>
-          </div>
-        ))}
+        {REWARDS.map((r, i) => {
+          const canAfford = points >= r.cost;
+          return (
+            <div
+              key={i}
+              onClick={() => handleRedeem(r)}
+              style={{
+                ...styles.rewardCard,
+                opacity: canAfford ? 1 : 0.5,
+                cursor: canAfford ? "pointer" : "not-allowed",
+                borderColor: canAfford ? "#FDE68A" : "#E5E7EB",
+                boxShadow: canAfford ? "0 4px 0px #FDE68A" : "0 4px 0px #E5E7EB",
+              }}
+            >
+              <span style={styles.rewardEmoji}>{r.emoji}</span>
+              <div style={styles.rewardName}>{r.name}</div>
+              <div style={{
+                ...styles.rewardCost,
+                color: canAfford ? "#F59E0B" : "#9CA3AF",
+              }}>⭐ {r.cost} stars</div>
+              {canAfford && <div style={styles.redeemBtn}>Redeem!</div>}
+            </div>
+          );
+        })}
       </div>
 
       {/* Add input */}
@@ -426,54 +477,45 @@ export default function ChoreList() {
 
 const styles = {
   wrapper: {
-    maxWidth: "420px",
-    margin: "0 auto",
-    fontFamily: "'Nunito', sans-serif",
-    paddingBottom: "40px",
+    maxWidth: "420px", margin: "0 auto",
+    fontFamily: "'Nunito', sans-serif", paddingBottom: "40px",
   },
-  // Milestone popup
   milestonePopup: {
     position: "fixed", top: "50%", left: "50%",
     transform: "translate(-50%, -50%)",
-    background: "white",
-    borderRadius: 28,
-    padding: "28px 36px",
-    textAlign: "center",
-    boxShadow: "0 20px 60px rgba(124,58,237,0.3)",
-    border: "3px solid #A78BFA",
-    zIndex: 1000,
+    background: "white", borderRadius: 28, padding: "28px 36px",
+    textAlign: "center", boxShadow: "0 20px 60px rgba(124,58,237,0.3)",
+    border: "3px solid #A78BFA", zIndex: 1000,
     animation: "milestoneIn 0.5s ease forwards",
   },
   milestoneEmoji: { fontSize: 64, marginBottom: 8 },
-  milestoneLabel: {
-    fontFamily: "'Fredoka One', cursive",
-    fontSize: 26, color: "#7C3AED",
-  },
+  milestoneLabel: { fontFamily: "'Fredoka One', cursive", fontSize: 26, color: "#7C3AED" },
   milestoneSub: { fontSize: 16, color: "#A78BFA", marginTop: 4, fontWeight: 700 },
-  // Header
   header: {
     background: "linear-gradient(135deg, #C084FC 0%, #F472B6 40%, #FCA5A5 70%, #FDE68A 100%)",
-    borderBottom: "3px dashed #F472B6",
-    padding: "20px 20px 16px",
-    textAlign: "center",
+    borderBottom: "3px dashed #F472B6", padding: "20px 20px 16px", textAlign: "center",
   },
   headerStickers: { fontSize: 22, letterSpacing: 6, marginBottom: 4 },
   headerTitle: {
-    fontFamily: "'Fredoka One', cursive",
-    fontSize: 32, color: "white", margin: 0, lineHeight: 1,
-    textShadow: "0 2px 8px rgba(124,58,237,0.25)",
+    fontFamily: "'Fredoka One', cursive", fontSize: 32, color: "white",
+    margin: 0, lineHeight: 1, textShadow: "0 2px 8px rgba(124,58,237,0.25)",
   },
   headerSub: {
-    fontSize: 13, fontWeight: 700,
-    color: "rgba(255,255,255,0.85)", marginTop: 2,
-    textTransform: "uppercase", letterSpacing: 1,
+    fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)",
+    marginTop: 2, textTransform: "uppercase", letterSpacing: 1,
   },
-  // Streak banner
+  starBadge: {
+    display: "inline-flex", alignItems: "center", gap: 6,
+    background: "linear-gradient(135deg, #FDE68A, #FCA5A5)",
+    borderRadius: 999, padding: "6px 16px", marginTop: 14,
+    fontFamily: "'Fredoka One', cursive", fontSize: 16,
+    color: "#7C3AED", border: "2px solid white",
+    boxShadow: "0 2px 8px rgba(124,58,237,0.15)",
+  },
   streakBanner: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
     background: "white", borderRadius: 20, padding: "16px 20px",
-    margin: "16px 20px 0", border: "2.5px solid",
-    transition: "all 0.4s ease",
+    margin: "16px 20px 0", border: "2.5px solid", transition: "all 0.4s ease",
   },
   streakLeft: { display: "flex", alignItems: "center", gap: 14 },
   streakTitle: {
@@ -482,31 +524,27 @@ const styles = {
   },
   streakValue: { fontFamily: "'Fredoka One', cursive", fontSize: 22 },
   milestoneBadge: {
-    display: "inline-block", borderRadius: 999,
-    padding: "2px 10px", fontSize: 11, fontWeight: 800,
-    color: "white", marginTop: 4,
+    display: "inline-block", borderRadius: 999, padding: "2px 10px",
+    fontSize: 11, fontWeight: 800, color: "white", marginTop: 4,
   },
   resetBtn: {
-    background: "none", border: "1.5px solid",
-    borderRadius: 10, padding: "6px 14px",
-    fontSize: 12, cursor: "pointer",
+    background: "none", border: "1.5px solid", borderRadius: 10,
+    padding: "6px 14px", fontSize: 12, cursor: "pointer",
     fontFamily: "'Nunito', sans-serif", fontWeight: 700,
   },
-  // Streak history
+  sectionTitle: {
+    fontFamily: "'Fredoka One', cursive", fontSize: 20, color: "#7C3AED",
+    padding: "20px 20px 10px", display: "flex", alignItems: "center", gap: 8,
+  },
   historyRow: {
     display: "flex", gap: 8, padding: "0 20px",
     overflowX: "auto", scrollbarWidth: "none",
   },
   historyDay: {
     borderRadius: 14, padding: "10px 8px", textAlign: "center",
-    border: "2.5px solid", minWidth: 42, flexShrink: 0,
-    transition: "all 0.3s ease",
+    border: "2.5px solid", minWidth: 42, flexShrink: 0, transition: "all 0.3s ease",
   },
-  historyLabel: {
-    fontSize: 10, fontWeight: 800,
-    textTransform: "uppercase", marginBottom: 4,
-  },
-  // Progress
+  historyLabel: { fontSize: 10, fontWeight: 800, textTransform: "uppercase", marginBottom: 4 },
   progressWrap: { padding: "16px 20px 0" },
   progressLabel: {
     display: "flex", justifyContent: "space-between",
@@ -518,118 +556,86 @@ const styles = {
     overflow: "hidden", border: "2px solid white",
     boxShadow: "0 2px 6px rgba(124,58,237,0.1)",
   },
-  progressFill: {
-    height: "100%", borderRadius: 999,
-    transition: "width 0.5s ease, background-color 0.4s ease",
-  },
-  dotsRow: {
-    display: "flex", justifyContent: "center", gap: 4,
-    padding: "10px 20px 0", flexWrap: "wrap",
-  },
-  // Chore list
+  progressFill: { height: "100%", borderRadius: 999, transition: "width 0.5s ease, background-color 0.4s ease" },
+  dotsRow: { display: "flex", justifyContent: "center", gap: 4, padding: "10px 20px 0", flexWrap: "wrap" },
   choreList: { padding: "16px 20px 0", display: "flex", flexDirection: "column", gap: 12 },
+  pointFloat: {
+    position: "absolute", top: -10, right: 20, zIndex: 10,
+    fontFamily: "'Fredoka One', cursive", fontSize: 18, color: "#F59E0B",
+    animation: "pointFloat 1.2s ease forwards", pointerEvents: "none",
+  },
   choreCard: {
     background: "white", borderRadius: 20, padding: "14px 16px",
     display: "flex", alignItems: "center", gap: 14,
     border: "2.5px solid #EDE9FE", boxShadow: "0 4px 0px #EDE9FE",
     transition: "all 0.2s", position: "relative", overflow: "hidden",
   },
-  choreCardDone: {
-    background: "#F5F3FF", borderColor: "#C4B5FD",
-    boxShadow: "0 4px 0px #C4B5FD", opacity: 0.85,
-  },
+  choreCardDone: { background: "#F5F3FF", borderColor: "#C4B5FD", boxShadow: "0 4px 0px #C4B5FD", opacity: 0.85 },
   choreIcon: {
     width: 48, height: 48, borderRadius: 16,
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: 26, flexShrink: 0,
-    border: "2px solid rgba(255,255,255,0.8)",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+    border: "2px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
   },
   choreInfo: { flex: 1 },
   choreName: { fontSize: 16, fontWeight: 800, color: "#3B1FA3", lineHeight: 1.2 },
   choreNameDone: { textDecoration: "line-through", color: "#A78BFA" },
-  chorePoints: { fontSize: 12, fontWeight: 700, color: "#F59E0B", marginTop: 2 },
+  chorePoints: { fontSize: 12, fontWeight: 700, marginTop: 2 },
   editInput: {
-    flex: 1, fontSize: 16, fontWeight: 700,
-    fontFamily: "'Nunito', sans-serif",
+    flex: 1, fontSize: 16, fontWeight: 700, fontFamily: "'Nunito', sans-serif",
     border: "none", borderBottom: "2px solid #7C3AED",
     backgroundColor: "transparent", color: "#3B1FA3",
     padding: "2px 0", outline: "none", width: "100%",
   },
-  iconBtn: {
-    background: "none", border: "none", fontSize: 15,
-    cursor: "pointer", padding: "4px 6px", borderRadius: 6, lineHeight: 1, flexShrink: 0,
-  },
-  deleteBtn: {
-    background: "none", border: "none", color: "#C4B9A8",
-    fontSize: 14, cursor: "pointer", padding: "4px 6px",
-    borderRadius: 6, lineHeight: 1, flexShrink: 0,
-  },
+  iconBtn: { background: "none", border: "none", fontSize: 15, cursor: "pointer", padding: "4px 6px", borderRadius: 6, lineHeight: 1, flexShrink: 0 },
+  deleteBtn: { background: "none", border: "none", color: "#C4B9A8", fontSize: 14, cursor: "pointer", padding: "4px 6px", borderRadius: 6, lineHeight: 1, flexShrink: 0 },
   choreCheck: {
-    width: 30, height: 30, borderRadius: "50%",
-    border: "2.5px solid #C4B5FD",
+    width: 30, height: 30, borderRadius: "50%", border: "2.5px solid #C4B5FD",
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: 16, flexShrink: 0, background: "white", transition: "all 0.2s",
   },
-  choreCheckDone: {
-    background: "linear-gradient(135deg, #A78BFA, #7C3AED)",
-    borderColor: "#7C3AED", color: "white",
-  },
-  sectionTitle: {
-    fontFamily: "'Fredoka One', cursive", fontSize: 20, color: "#7C3AED",
-    padding: "20px 20px 10px", display: "flex", alignItems: "center", gap: 8,
-  },
-  weekCalendar: {
-    display: "flex", gap: 8, padding: "0 20px",
-    overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none",
-  },
-  dayCard: {
-    background: "white", borderRadius: 16, padding: "10px 8px", textAlign: "center",
-    border: "2.5px solid #D1FAE5", boxShadow: "0 3px 0px #D1FAE5",
-    minWidth: 44, flexShrink: 0,
-  },
+  choreCheckDone: { background: "linear-gradient(135deg, #A78BFA, #7C3AED)", borderColor: "#7C3AED", color: "white" },
+  weekCalendar: { display: "flex", gap: 8, padding: "0 20px", overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" },
+  dayCard: { background: "white", borderRadius: 16, padding: "10px 8px", textAlign: "center", border: "2.5px solid #D1FAE5", boxShadow: "0 3px 0px #D1FAE5", minWidth: 44, flexShrink: 0 },
   dayCardDone: { borderColor: "#86EFAC", boxShadow: "0 3px 0px #86EFAC", background: "#F0FDF4" },
   dayCardToday: { borderColor: "#F472B6", boxShadow: "0 3px 0px #F472B6", background: "#FFF0F7" },
   dayLabel: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", marginBottom: 6 },
   dayEmoji: { fontSize: 20, marginBottom: 6 },
   dayDot: { width: 8, height: 8, borderRadius: "50%", margin: "0 auto" },
-  rewardShelf: {
-    display: "flex", gap: 12, padding: "0 20px",
-    overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none",
-  },
+  pointsHint: { padding: "0 20px 10px", fontSize: 14, fontWeight: 600, color: "#6B7280" },
+  rewardShelf: { display: "flex", gap: 12, padding: "0 20px", overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" },
   rewardCard: {
     background: "white", borderRadius: 20, padding: "14px 16px", textAlign: "center",
-    border: "2.5px solid #FDE68A", boxShadow: "0 4px 0px #FDE68A",
-    minWidth: 100, flexShrink: 0, cursor: "pointer",
+    border: "2.5px solid", minWidth: 100, flexShrink: 0, transition: "all 0.2s",
   },
   rewardEmoji: { fontSize: 32, display: "block", marginBottom: 4 },
   rewardName: { fontSize: 12, fontWeight: 800, color: "#7C3AED", lineHeight: 1.2 },
-  rewardCost: { fontSize: 11, fontWeight: 700, color: "#F59E0B", marginTop: 4 },
+  rewardCost: { fontSize: 11, fontWeight: 700, marginTop: 4 },
+  redeemBtn: {
+    marginTop: 6, background: "linear-gradient(135deg, #7C3AED, #A78BFA)",
+    color: "white", borderRadius: 999, padding: "4px 10px",
+    fontSize: 11, fontWeight: 800, fontFamily: "'Fredoka One', cursive",
+  },
   inputRow: { display: "flex", gap: 8, padding: "20px 20px 0" },
   input: {
-    flex: 1, padding: "13px 16px", fontSize: 15,
-    fontFamily: "'Nunito', sans-serif",
+    flex: 1, padding: "13px 16px", fontSize: 15, fontFamily: "'Nunito', sans-serif",
     border: "2.5px solid #EDE9FE", borderRadius: 18,
-    backgroundColor: "white", color: "#3B1FA3",
-    transition: "border-color 0.2s ease", fontWeight: 700,
+    backgroundColor: "white", color: "#3B1FA3", fontWeight: 700,
   },
   addBtn: {
-    padding: "13px 20px", fontSize: 15, fontWeight: 800,
-    fontFamily: "'Fredoka One', cursive",
-    background: "linear-gradient(135deg, #7C3AED, #A78BFA)",
-    color: "white", border: "none", borderRadius: 18,
-    cursor: "pointer", boxShadow: "0 4px 0px #5B21B6", whiteSpace: "nowrap",
+    padding: "13px 20px", fontSize: 15, fontWeight: 800, fontFamily: "'Fredoka One', cursive",
+    background: "linear-gradient(135deg, #7C3AED, #A78BFA)", color: "white",
+    border: "none", borderRadius: 18, cursor: "pointer",
+    boxShadow: "0 4px 0px #5B21B6", whiteSpace: "nowrap",
   },
   resetBtn2: {
-    display: "block", margin: "12px auto 0",
-    background: "none", border: "1.5px solid #C4B5FD",
-    borderRadius: 10, padding: "6px 16px",
+    display: "block", margin: "12px auto 0", background: "none",
+    border: "1.5px solid #C4B5FD", borderRadius: 10, padding: "6px 16px",
     fontSize: 12, color: "#A78BFA", cursor: "pointer",
     fontFamily: "'Nunito', sans-serif", fontWeight: 700,
   },
   allDoneBanner: {
     textAlign: "center", marginTop: 24, fontSize: 16,
-    color: "#7C3AED", fontWeight: 800,
-    fontFamily: "'Fredoka One', cursive",
+    color: "#7C3AED", fontWeight: 800, fontFamily: "'Fredoka One', cursive",
   },
 };
