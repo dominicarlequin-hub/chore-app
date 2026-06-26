@@ -508,12 +508,27 @@ export default function ChoreList() {
 }
 
 
+
 const glass = {
-  background: "rgba(255,255,255,0.25)",
-  backdropFilter: "blur(12px)",
-  WebkitBackdropFilter: "blur(12px)",
-  border: "1.5px solid rgba(255,255,255,0.45)",
-  boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+  background: "rgba(255,255,255,0.18)",
+  backdropFilter: "blur(14px)",
+  WebkitBackdropFilter: "blur(14px)",
+  border: "1.5px solid rgba(255,255,255,0.35)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+};
+
+// Blue + teal accent palette
+const C = {
+  green:     "#059669",
+  greenMid:  "#10B981",
+  greenLight:"#34D399",
+  teal:      "#0D9488",
+  tealLight: "#2DD4BF",
+  blue:      "#2563EB",
+  blueLight: "#60A5FA",
+  bluePale:  "#BAE6FD",
+  sky:       "#0EA5E9",
+  bg:        "#042f4b",   // deep ocean-teal background
 };
 
 const styles = {
@@ -530,78 +545,92 @@ const styles = {
     textAlign: "center", zIndex: 1000,
     animation: "milestoneIn 0.5s ease forwards",
   },
-  popupTitle: { fontFamily: "'Fredoka One', cursive", fontSize: 24, color: "#064E3B" },
-  popupSub: { fontSize: 15, color: "#065F46", marginTop: 4, fontWeight: 700 },
+  popupTitle: { fontFamily: "'Fredoka One', cursive", fontSize: 24, color: "white" },
+  popupSub: { fontSize: 15, color: C.tealLight, marginTop: 4, fontWeight: 700 },
+
+  // Header — green + teal gradient
   header: {
-    background: "linear-gradient(135deg, #059669 0%, #10B981 50%, #34D399 100%)",
+    background: `linear-gradient(135deg, ${C.green} 0%, ${C.teal} 50%, ${C.sky} 100%)`,
     padding: "20px 20px 14px", flexShrink: 0,
-    boxShadow: "0 4px 20px rgba(5,150,105,0.3)",
+    boxShadow: `0 4px 20px rgba(13,148,136,0.4)`,
   },
   headerTop: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
-  headerTitle: { fontFamily: "'Fredoka One', cursive", fontSize: 26, color: "white", lineHeight: 1, textShadow: "0 2px 8px rgba(0,0,0,0.15)" },
+  headerTitle: { fontFamily: "'Fredoka One', cursive", fontSize: 26, color: "white", lineHeight: 1, textShadow: "0 2px 8px rgba(0,0,0,0.2)" },
   headerSub: { fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: 700, marginTop: 2 },
   starPill: {
     background: "rgba(255,255,255,0.2)", borderRadius: 999,
     padding: "6px 14px", fontFamily: "'Fredoka One', cursive",
-    fontSize: 16, color: "white", border: "1.5px solid rgba(255,255,255,0.5)",
+    fontSize: 16, color: "white", border: `1.5px solid ${C.tealLight}`,
     backdropFilter: "blur(8px)",
   },
-  progressTrack: { background: "rgba(255,255,255,0.3)", borderRadius: 999, height: 8, overflow: "hidden" },
+  progressTrack: { background: "rgba(255,255,255,0.25)", borderRadius: 999, height: 10, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 999, transition: "width 0.5s ease" },
+
+  // Deep ocean-teal background with blue + teal blobs
   screen: {
     flex: 1, overflowY: "auto",
-    background: "#064E3B",
+    background: C.bg,
     backgroundImage: `
-      radial-gradient(circle at 5% 10%, #059669 0%, transparent 45%),
-      radial-gradient(circle at 95% 85%, #065F46 0%, transparent 45%),
-      radial-gradient(circle at 50% 50%, #047857 0%, transparent 55%),
-      radial-gradient(circle at 80% 20%, #10B981 0%, transparent 35%)
+      radial-gradient(circle at 5% 10%,  ${C.teal}88 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, ${C.blue}66 0%, transparent 40%),
+      radial-gradient(circle at 50% 45%, ${C.green}55 0%, transparent 50%),
+      radial-gradient(circle at 75% 15%, ${C.sky}44 0%, transparent 35%)
     `,
   },
   padded: { padding: "16px 16px 24px" },
+
   allDoneBanner: {
-    ...glass, borderRadius: 16, padding: "14px 16px", textAlign: "center",
+    background: `linear-gradient(135deg, ${C.teal}, ${C.sky})`,
+    borderRadius: 16, padding: "14px 16px", textAlign: "center",
     fontFamily: "'Fredoka One', cursive", fontSize: 18, color: "white",
-    marginBottom: 14,
+    marginBottom: 14, boxShadow: `0 4px 14px rgba(13,148,136,0.4)`,
   },
   choreList: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 },
   pointFloat: {
     position: "absolute", top: -10, right: 20, zIndex: 10,
-    fontFamily: "'Fredoka One', cursive", fontSize: 18, color: "#FDE68A",
+    fontFamily: "'Fredoka One', cursive", fontSize: 18, color: C.bluePale,
     animation: "pointFloat 1.2s ease forwards", pointerEvents: "none",
   },
+
+  // Chore cards — glass with a teal tint on the left border
   choreCard: {
     ...glass, borderRadius: 18, padding: "12px 14px",
     display: "flex", alignItems: "center", gap: 12,
     transition: "all 0.2s",
+    borderLeft: `3px solid ${C.tealLight}`,
   },
-  choreCardDone: { background: "rgba(52,211,153,0.2)", borderColor: "rgba(52,211,153,0.4)", opacity: 0.9 },
+  choreCardDone: {
+    background: `rgba(45,212,191,0.15)`,
+    borderColor: `rgba(45,212,191,0.5)`,
+    borderLeft: `3px solid ${C.greenLight}`,
+    opacity: 0.9,
+  },
   choreIcon: {
     width: 44, height: 44, borderRadius: 14,
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: 24, flexShrink: 0,
-    background: "rgba(255,255,255,0.2)",
-    border: "1.5px solid rgba(255,255,255,0.3)",
+    background: `linear-gradient(135deg, ${C.teal}66, ${C.blue}66)`,
+    border: `1.5px solid rgba(255,255,255,0.3)`,
   },
   choreInfo: { flex: 1 },
   choreName: { fontSize: 15, fontWeight: 800, color: "white" },
-  choreNameDone: { textDecoration: "line-through", color: "rgba(255,255,255,0.5)" },
+  choreNameDone: { textDecoration: "line-through", color: "rgba(255,255,255,0.45)" },
   chorePoints: { fontSize: 12, fontWeight: 700, marginTop: 2 },
   editInput: {
     fontSize: 15, fontWeight: 700, fontFamily: "'Nunito', sans-serif",
-    border: "none", borderBottom: "2px solid rgba(255,255,255,0.6)",
+    border: "none", borderBottom: `2px solid ${C.tealLight}`,
     background: "transparent", color: "white", outline: "none", width: "100%",
   },
   iconBtn: { background: "none", border: "none", fontSize: 14, cursor: "pointer", padding: "4px", flexShrink: 0 },
-  deleteBtn: { background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, cursor: "pointer", padding: "4px", flexShrink: 0 },
+  deleteBtn: { background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 13, cursor: "pointer", padding: "4px", flexShrink: 0 },
   choreCheck: {
     width: 28, height: 28, borderRadius: "50%",
-    border: "2px solid rgba(255,255,255,0.4)",
+    border: `2px solid ${C.tealLight}`,
     display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 14, flexShrink: 0, background: "rgba(255,255,255,0.1)",
-    color: "white",
+    fontSize: 14, flexShrink: 0, background: "rgba(255,255,255,0.1)", color: "white",
   },
-  choreCheckDone: { background: "linear-gradient(135deg,#34D399,#059669)", borderColor: "#34D399" },
+  choreCheckDone: { background: `linear-gradient(135deg,${C.tealLight},${C.greenLight})`, borderColor: C.tealLight },
+
   inputRow: { display: "flex", gap: 8 },
   input: {
     flex: 1, padding: "12px 14px", fontSize: 15, fontFamily: "'Nunito', sans-serif",
@@ -609,50 +638,57 @@ const styles = {
   },
   addBtn: {
     padding: "12px 18px", fontSize: 20, fontWeight: 800,
-    background: "linear-gradient(135deg,#059669,#34D399)",
+    background: `linear-gradient(135deg,${C.teal},${C.sky})`,
     color: "white", border: "none", borderRadius: 16,
-    cursor: "pointer", boxShadow: "0 4px 14px rgba(5,150,105,0.4)",
+    cursor: "pointer", boxShadow: `0 4px 14px rgba(14,165,233,0.4)`,
   },
   resetBtn: {
     display: "block", margin: "12px auto 0", background: "none",
-    border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, padding: "6px 16px",
-    fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer",
+    border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "6px 16px",
+    fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer",
     fontFamily: "'Nunito', sans-serif", fontWeight: 700,
   },
+
+  // Streak tab
   streakHero: {
     ...glass, borderRadius: 24, padding: "32px 20px",
     textAlign: "center", marginBottom: 20,
+    borderTop: `3px solid ${C.sky}`,
   },
   streakNumber: { fontFamily: "'Fredoka One', cursive", fontSize: 48, lineHeight: 1, color: "white" },
-  streakLabel: { fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginTop: 4 },
+  streakLabel: { fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginTop: 4 },
   milestoneBadge: {
     display: "inline-block", borderRadius: 999, padding: "6px 16px",
     fontSize: 13, fontWeight: 800, color: "white", marginTop: 12,
   },
   sectionTitle: {
-    fontFamily: "'Fredoka One', cursive", fontSize: 18, color: "rgba(255,255,255,0.9)",
+    fontFamily: "'Fredoka One', cursive", fontSize: 18, color: C.bluePale,
     marginBottom: 10,
   },
   historyRow: { display: "flex", gap: 8, overflowX: "auto", marginBottom: 20, scrollbarWidth: "none" },
   historyDay: {
     ...glass, borderRadius: 14, padding: "10px 8px", textAlign: "center",
-    minWidth: 42, flexShrink: 0, border: "1.5px solid rgba(255,255,255,0.3)",
+    minWidth: 42, flexShrink: 0,
   },
-  historyLabel: { fontSize: 10, fontWeight: 800, textTransform: "uppercase", marginBottom: 4, color: "white" },
+  historyLabel: { fontSize: 10, fontWeight: 800, textTransform: "uppercase", marginBottom: 4, color: C.bluePale },
   milestoneList: { display: "flex", flexDirection: "column", gap: 10 },
   milestoneRow: {
     ...glass, borderRadius: 16, padding: "14px 16px",
     display: "flex", alignItems: "center", gap: 14,
+    borderLeft: `3px solid ${C.blueLight}`,
   },
   milestoneInfo: { flex: 1 },
   milestoneName: { fontSize: 15, fontWeight: 800, color: "white" },
-  milestoneDays: { fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: 600 },
+  milestoneDays: { fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 600 },
+
+  // Rewards tab
   pointsHero: {
     ...glass, borderRadius: 24, padding: "24px",
     textAlign: "center", marginBottom: 20,
+    borderTop: `3px solid ${C.blueLight}`,
   },
-  pointsNumber: { fontFamily: "'Fredoka One', cursive", fontSize: 42, color: "white" },
-  pointsLabel: { fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.7)" },
+  pointsNumber: { fontFamily: "'Fredoka One', cursive", fontSize: 42, color: C.bluePale },
+  pointsLabel: { fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.65)" },
   rewardGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
   rewardCard: {
     ...glass, borderRadius: 20, padding: "16px 12px",
@@ -661,26 +697,28 @@ const styles = {
   rewardName: { fontSize: 13, fontWeight: 800, color: "white", marginBottom: 4 },
   rewardCost: { fontSize: 12, fontWeight: 700 },
   redeemBtn: {
-    marginTop: 8, background: "linear-gradient(135deg,#059669,#34D399)",
+    marginTop: 8, background: `linear-gradient(135deg,${C.blue},${C.sky})`,
     color: "white", borderRadius: 999, padding: "5px 12px",
     fontSize: 12, fontWeight: 800, fontFamily: "'Fredoka One', cursive",
-    boxShadow: "0 3px 10px rgba(5,150,105,0.4)",
+    boxShadow: `0 3px 10px rgba(14,165,233,0.4)`,
   },
-  needMore: { marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700 },
+  needMore: { marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 700 },
+
+  // Calendar tab
   calendarGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
-  calCard: {
-    ...glass, borderRadius: 20, padding: "16px 12px", textAlign: "center",
-  },
-  calCardDone: { background: "rgba(52,211,153,0.25)", borderColor: "rgba(52,211,153,0.5)" },
-  calCardToday: { background: "rgba(244,114,182,0.25)", borderColor: "rgba(244,114,182,0.5)" },
-  calDay: { fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: "white" },
-  calStatus: { fontSize: 11, fontWeight: 800, marginTop: 6, color: "rgba(255,255,255,0.7)" },
+  calCard: { ...glass, borderRadius: 20, padding: "16px 12px", textAlign: "center" },
+  calCardDone: { background: `rgba(45,212,191,0.2)`, borderColor: `rgba(45,212,191,0.5)` },
+  calCardToday: { background: `rgba(96,165,250,0.25)`, borderColor: `rgba(96,165,250,0.6)` },
+  calDay: { fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: C.bluePale },
+  calStatus: { fontSize: 11, fontWeight: 800, marginTop: 6, color: "rgba(255,255,255,0.65)" },
+
+  // Tab bar — dark ocean with teal/blue accents
   tabBar: {
     display: "flex",
-    background: "rgba(4,40,28,0.95)",
+    background: "rgba(2,20,35,0.97)",
     backdropFilter: "blur(20px)",
     WebkitBackdropFilter: "blur(20px)",
-    borderTop: "1px solid rgba(52,211,153,0.2)",
+    borderTop: `1px solid rgba(45,212,191,0.25)`,
     padding: "8px 0 12px", flexShrink: 0,
   },
   tabBtn: {
@@ -691,5 +729,5 @@ const styles = {
   },
   tabEmoji: { fontSize: 22, lineHeight: 1, marginBottom: 2 },
   tabLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 },
-  tabDot: { width: 4, height: 4, borderRadius: "50%", background: "#34D399", marginTop: 3 },
+  tabDot: { width: 4, height: 4, borderRadius: "50%", background: C.tealLight, marginTop: 3 },
 };
